@@ -100,24 +100,11 @@ PlasmoidItem {
                     radius: width / 2
                     color: root.canConsume ? "#2ecc71" : "#e74c3c"
                 }
-
-                PlasmaComponents.Label {
-                    text: root.consumptionCurrency
-                    font.pointSize: Kirigami.Theme.defaultFont.pointSize
-                    color: PlasmaCore.Theme.textColor
-                }
             }
 
             ColumnLayout {
                 Layout.fillWidth: true
                 spacing: Kirigami.Units.smallSpacing
-
-                PlasmaComponents.Label {
-                    text: "DIEM"
-                    font.pointSize: Kirigami.Theme.defaultFont.pointSize
-                    color: PlasmaCore.Theme.textColor
-                    opacity: 0.7
-                }
 
                 RowLayout {
                     spacing: Kirigami.Units.smallSpacing
@@ -134,6 +121,13 @@ PlasmoidItem {
                         font.pointSize: root.diemBalance > 0 ? root.balanceFontSize : root.smallBalanceFontSize
                         color: PlasmaCore.Theme.textColor
                         opacity: 0.6
+                    }
+
+                    PlasmaComponents.Label {
+                        text: "DIEM"
+                        font.pointSize: Kirigami.Theme.defaultFont.pointSize
+                        color: PlasmaCore.Theme.textColor
+                        opacity: 0.7
                     }
                 }
 
@@ -163,36 +157,20 @@ PlasmoidItem {
                 Layout.fillWidth: true
                 spacing: Kirigami.Units.smallSpacing
 
-                PlasmaComponents.Label {
-                    text: "USD"
-                    font.pointSize: Kirigami.Theme.defaultFont.pointSize
-                    color: PlasmaCore.Theme.textColor
-                    opacity: 0.7
-                }
+                RowLayout {
+                    PlasmaComponents.Label {
+                        text: root.usdBalance > 0 ? "$" + root.usdBalance.toFixed(2) : "\u2014"
+                        font.pointSize: root.usdBalance > 0 ? root.balanceFontSize : root.smallBalanceFontSize
+                        font.weight: Font.Bold
+                        color: root.usdBalance > 0 ? PlasmaCore.Theme.textColor : Kirigami.Theme.disabledTextColor
+                    }
 
-                PlasmaComponents.Label {
-                    text: root.usdBalance > 0 ? "$" + root.usdBalance.toFixed(2) : "\u2014"
-                    font.pointSize: root.usdBalance > 0 ? root.balanceFontSize : root.smallBalanceFontSize
-                    font.weight: Font.Bold
-                    color: root.usdBalance > 0 ? PlasmaCore.Theme.textColor : Kirigami.Theme.disabledTextColor
-                }
-            }
-
-            RowLayout {
-                Layout.alignment: Qt.AlignHCenter
-                spacing: Kirigami.Units.smallSpacing
-
-                Kirigami.Icon {
-                    source: root.canConsume ? "dialog-ok" : "dialog-error"
-                    width: Kirigami.Units.iconSizes.smallMedium
-                    height: Kirigami.Units.iconSizes.smallMedium
-                    color: root.canConsume ? "#2ecc71" : "#e74c3c"
-                }
-
-                PlasmaComponents.Label {
-                    text: root.canConsume ? "Ready to consume" : "Insufficient balance"
-                    font.pointSize: Kirigami.Theme.smallFont.pointSize
-                    color: PlasmaCore.Theme.textColor
+                    PlasmaComponents.Label {
+                        text: "USD"
+                        font.pointSize: Kirigami.Theme.defaultFont.pointSize
+                        color: PlasmaCore.Theme.textColor
+                        opacity: 0.7
+                    }
                 }
             }
         }
