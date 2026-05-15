@@ -2,12 +2,20 @@
 //
 // Usage:
 //   API.fetchBalance(apiKey, callback)
-//     callback(success, data, errorMessage)
+//     callback(success, data, errorMessage, errorKind)
 //
+// errorKind values:
+//   "auth"     - HTTP 401/403, the token is missing/invalid/expired
+//   "network"  - transport error
+//   "timeout"  - request timed out
+//   "http"     - other non-2xx HTTP status
+//   "parse"    - response body could not be parsed
+//   "config"   - caller passed no API key
+//   null       - on success
 
 function fetchBalance(apiKey, callback) {
     if (!apiKey) {
-        callback(false, null, "No API key configured")
+        callback(false, null, "No API key configured", "config")
         return
     }
 
@@ -25,23 +33,23 @@ function fetchBalance(apiKey, callback) {
         if (xhr.status === 200) {
             try {
                 var data = JSON.parse(xhr.responseText)
-                callback(true, data, null)
+                callback(true, data, null, null)
             } catch (e) {
-                callback(false, null, "Failed to parse response: " + e.message)
+                callback(false, null, "Failed to parse response: " + e.message, "parse")
             }
-        } else if (xhr.status === 401) {
-            callback(false, null, "Authentication failed — check your API key")
+        } else if (xhr.status === 401 || xhr.status === 403) {
+            callback(false, null, "Authentication failed — set a valid API token", "auth")
         } else {
-            callback(false, null, "Request failed (HTTP " + xhr.status + ")")
+            callback(false, null, "Request failed (HTTP " + xhr.status + ")", "http")
         }
     }
 
     xhr.onerror = function() {
-        callback(false, null, "Network error — check your connection")
+        callback(false, null, "Network error — check your connection", "network")
     }
 
     xhr.ontimeout = function() {
-        callback(false, null, "Request timed out")
+        callback(false, null, "Request timed out", "timeout")
     }
 
     xhr.send()
