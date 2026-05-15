@@ -4,11 +4,17 @@ import org.kde.plasma.core 2.0 as PlasmaCore
 import org.kde.plasma.components 3.0 as PlasmaComponents
 import org.kde.plasma.extras 2.0 as PlasmaExtras
 import org.kde.plasma.plasmoid 2.0
+import org.kde.plasma.plasma5support 2.0 as P5Support
 import org.kde.kirigami 2.20 as Kirigami
+import "../code/api.js" as API
 
 PlasmoidItem {
     id: root
 
+    // TODO: replace env-var lookup with KWallet-stored secret
+    property string apiToken: ""
+
+    property bool loading: true
     property bool hasBalance: false
     property bool canConsume: false
     property string consumptionCurrency: ""
@@ -24,19 +30,63 @@ PlasmoidItem {
     property real smallBalanceFontSize: Kirigami.Theme.defaultFont.pointSize + 1
 
     Component.onCompleted: {
-        loadStaticData()
+        envSource.connectSource("printenv VENICE_API_TOKEN")
     }
 
-    function loadStaticData() {
+    // Reads VENICE_API_TOKEN from the user's environment.
+    // TODO: replace with a KWallet-stored secret.
+    P5Support.DataSource {
+        id: envSource
+        engine: "executable"
+        connectedSources: []
+
+        onNewData: function(sourceName, data) {
+            disconnectSource(sourceName)
+
+            var stdout = (data["stdout"] || "").toString().trim()
+            var exitCode = data["exit code"]
+
+            if (exitCode === 0 && stdout.length > 0) {
+                root.apiToken = stdout
+            } else {
+                root.loading = false
+                root.error = true
+                root.errorMessage = "VENICE_API_TOKEN environment variable is not set"
+            }
+        }
+    }
+
+    function refresh() {
+        if (!apiToken) return
+        loading = true
+        API.fetchBalance(apiToken, onBalance)
+    }
+
+    function onBalance(success, data, errMsg) {
+        loading = false
+
+        if (!success) {
+            error = true
+            errorMessage = errMsg || "Unknown error"
+            return
+        }
+
+        error = false
+        errorMessage = ""
         hasBalance = true
-        canConsume = true
-        consumptionCurrency = "DIEM"
-        diemBalance = 90.5
-        usdBalance = 25.0
-        diemAllocation = 100
+
+        canConsume = !!data.canConsume
+        consumptionCurrency = data.consumptionCurrency || ""
+
+        var balances = data.balances || {}
+        diemBalance = (balances.diem !== null && balances.diem !== undefined) ? balances.diem : 0
+        usdBalance = (balances.usd !== null && balances.usd !== undefined) ? balances.usd : 0
+        diemAllocation = (data.diemEpochAllocation !== null && data.diemEpochAllocation !== undefined) ? data.diemEpochAllocation : 0
 
         if (diemAllocation > 0) {
             diemPct = (diemBalance / diemAllocation) * 100
+        } else {
+            diemPct = 0
         }
 
         if (diemPct > 75) {
@@ -46,6 +96,15 @@ PlasmoidItem {
         } else {
             diemColor = "#e74c3c"
         }
+    }
+
+    Timer {
+        id: pollTimer
+        interval: 60000
+        repeat: true
+        running: root.apiToken !== ""
+        triggeredOnStart: true
+        onTriggered: root.refresh()
     }
 
     compactRepresentation: MouseArea {
@@ -62,11 +121,15 @@ PlasmoidItem {
                 width: Kirigami.Units.iconSizes.small
                 height: Kirigami.Units.iconSizes.small
                 radius: width / 2
-                color: root.diemColor
+                color: root.error ? "#e74c3c"
+                     : root.hasBalance ? root.diemColor
+                     : Kirigami.Theme.disabledTextColor
             }
 
             PlasmaComponents.Label {
-                text: Math.round(root.diemPct) + "%"
+                text: root.error ? "—"
+                    : root.hasBalance ? Math.round(root.diemPct) + "%"
+                    : "…"
                 font.pointSize: Kirigami.Theme.defaultFont.pointSize
                 color: PlasmaCore.Theme.textColor
             }
@@ -74,8 +137,10 @@ PlasmoidItem {
     }
 
     fullRepresentation: PlasmaExtras.Representation {
-        implicitWidth: Kirigami.Units.gridUnit * 14
-        implicitHeight: Kirigami.Units.gridUnit * 10
+        implicitWidth: Kirigami.Units.gridUnit * 16
+        implicitHeight: Kirigami.Units.gridUnit * 12
+        Layout.minimumWidth: Kirigami.Units.gridUnit * 12
+        Layout.minimumHeight: Kirigami.Units.gridUnit * 10
 
         ColumnLayout {
             anchors {
@@ -84,13 +149,44 @@ PlasmoidItem {
             }
             spacing: Kirigami.Units.largeSpacing
 
-            PlasmaExtras.Heading {
-                level: 2
-                text: "Venice.ai Credits"
+            RowLayout {
+                Layout.fillWidth: true
+                spacing: Kirigami.Units.smallSpacing
+
+                PlasmaExtras.Heading {
+                    level: 2
+                    text: "Venice.ai Credits"
+                    Layout.fillWidth: true
+                    horizontalAlignment: Text.AlignHCenter
+                }
+
+                Kirigami.Icon {
+                    visible: root.error
+                    source: "dialog-warning"
+                    width: Kirigami.Units.iconSizes.small
+                    height: Kirigami.Units.iconSizes.small
+
+                    PlasmaComponents.ToolTip.visible: errorMouseArea.containsMouse
+                    PlasmaComponents.ToolTip.text: root.errorMessage
+                    PlasmaComponents.ToolTip.delay: 0
+
+                    MouseArea {
+                        id: errorMouseArea
+                        anchors.fill: parent
+                        hoverEnabled: true
+                    }
+                }
+            }
+
+            PlasmaComponents.Label {
+                visible: root.loading && !root.hasBalance && !root.error
+                text: "Loading…"
                 Layout.alignment: Qt.AlignHCenter
+                opacity: 0.7
             }
 
             RowLayout {
+                visible: root.hasBalance
                 Layout.alignment: Qt.AlignHCenter
                 spacing: Kirigami.Units.smallSpacing
 
@@ -103,6 +199,7 @@ PlasmoidItem {
             }
 
             ColumnLayout {
+                visible: root.hasBalance
                 Layout.fillWidth: true
                 spacing: Kirigami.Units.smallSpacing
 
@@ -154,6 +251,7 @@ PlasmoidItem {
             }
 
             ColumnLayout {
+                visible: root.hasBalance
                 Layout.fillWidth: true
                 spacing: Kirigami.Units.smallSpacing
 
@@ -173,6 +271,8 @@ PlasmoidItem {
                     }
                 }
             }
+
+            Item { Layout.fillHeight: true }
         }
     }
 }
