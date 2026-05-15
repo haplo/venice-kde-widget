@@ -1,0 +1,23 @@
+{
+  "KPackageStructure": "Plasma/Applet",
+  "KPlugin": {
+    "Id": "com.venice.widget.credits",
+    "Name": "Venice.ai Credits",
+    "Description": "Displays Venice.ai API credits and usage balances",
+    "Icon": "tools-report-bug",
+    "Authors": [
+      {
+        "Name": "Fidel",
+        "Email": ""
+      }
+    ],
+    "Version": "1.1",
+    "License": "MIT",
+    "Category": "System Information",
+    "Website": "https://venice.ai",
+    "FormFactors": ["desktop"]
+  },
+  "X-Plasma-API": "declarativeappletscript",
+  "X-Plasma-API-Minimum-Version": "6.0",
+  "X-Plasma-MainScript": "ui/main.qml"
+}
