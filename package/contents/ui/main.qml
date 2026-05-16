@@ -112,29 +112,7 @@ PlasmoidItem {
 
     Component.onCompleted: {
         console.log("[venice] kwallet.sh =", kwalletScript)
-        // Migrate legacy plaintext apiKey from KConfig, if present.
-        var legacy = Plasmoid.configuration.apiKey || ""
-        if (legacy && legacy.length > 0) {
-            console.log("[venice] migrating legacy plaintext apiKey into KWallet")
-            secretWatchdog.restart()
-            Secret.save(execSource, kwalletScript, legacy, function(ok, err) {
-                // Always clear the plaintext copy; if migration failed the
-                // user can re-enter the token via the widget UI.
-                Plasmoid.configuration.apiKey = ""
-                if (ok) {
-                    secretWatchdog.stop()
-                    root.apiToken = legacy
-                    root.needsToken = false
-                    root.loadingSecret = false
-                    root.refresh()
-                } else {
-                    console.log("[venice] legacy migration failed:", err)
-                    waitForKWalletReady()
-                }
-            })
-        } else {
-            waitForKWalletReady()
-        }
+        waitForKWalletReady()
     }
 
     // If the helper never reports back (kwalletd6 down, helper missing, etc.)

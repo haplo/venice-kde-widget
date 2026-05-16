@@ -5,15 +5,6 @@
                           http://www.kde.org/standards/kcfg/1.0/kcfg.xsd">
   <kcfgfile name=""/>
   <group name="General">
-    <!--
-      DEPRECATED: tokens are now stored in KWallet via secret-tool.
-      This entry is retained only so that existing installs can migrate
-      the legacy plaintext value into KWallet on first run, after which
-      it is cleared. Do not surface this in the UI.
-    -->
-    <entry name="apiKey" type="String">
-      <default></default>
-    </entry>
   </group>
   <group name="Appearance">
     <entry name="transparentBackground" type="Bool">

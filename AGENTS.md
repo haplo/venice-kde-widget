@@ -22,7 +22,7 @@ package/
         ConfigAppearance.qml  # Appearance settings page (background, etc.)
     config/
       config.qml            # ConfigModel (declares config categories)
-      main.xml              # KConfig schema (legacy apiKey migration + appearance prefs)
+      main.xml              # KConfig schema (appearance prefs)
     code/
       api.js             # Venice.ai API client
       secret.js          # KWallet helper wrapper (drives kwallet.sh)
@@ -48,7 +48,7 @@ make logs       # View Plasma shell logs (journalctl)
 
 - Use Plasma 6 `metadata.json` format (not the older `metadata.desktop`)
 - Follow KDE HIG for spacing and sizing
-- API token is stored in KWallet via `secret-tool` (the freedesktop Secret Service), driven from QML through a `P5Support.DataSource` executable helper (`code/kwallet.sh`, wrapped by `code/secret.js`). Never persist it in `Plasmoid.configuration` or any other plaintext store. The legacy `apiKey` KConfig entry exists solely so that pre-KWallet installs can be migrated on first launch.
+- API token is stored in KWallet via `secret-tool` (the freedesktop Secret Service), driven from QML through a `P5Support.DataSource` executable helper (`code/kwallet.sh`, wrapped by `code/secret.js`). Never persist it in `Plasmoid.configuration` or any other plaintext store.
 - All network requests happen in QML JavaScript context via `XMLHttpRequest`
 - Use `Kirigami.Icon`, `Kirigami.Heading`, `PlasmaCore.Svg` for consistent theming
 - Widget size hints: `compactRepresentation` for panel, `fullRepresentation` for popup
