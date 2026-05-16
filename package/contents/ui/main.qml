@@ -67,10 +67,16 @@ PlasmoidItem {
 
     // -- Secret state ---------------------------------------------------
     property string apiToken: ""
-    property bool loadingSecret: true
+    property bool loadingSecret: false
+    property bool waitingForKWallet: false // true while probing kwallet readiness
     property bool needsToken: false        // true when no token or auth failed
     property bool savingToken: false
     property string secretError: ""
+
+    readonly property int kwalletReadyDeadlineMs: 60000
+    readonly property int kwalletReadyPollMs: 1000
+    property bool _readyInFlight: false
+    property double _readyStartedAt: 0
 
     // -- Balance state --------------------------------------------------
     property bool loading: false
@@ -106,11 +112,11 @@ PlasmoidItem {
 
     Component.onCompleted: {
         console.log("[venice] kwallet.sh =", kwalletScript)
-        secretWatchdog.restart()
         // Migrate legacy plaintext apiKey from KConfig, if present.
         var legacy = Plasmoid.configuration.apiKey || ""
         if (legacy && legacy.length > 0) {
             console.log("[venice] migrating legacy plaintext apiKey into KWallet")
+            secretWatchdog.restart()
             Secret.save(execSource, kwalletScript, legacy, function(ok, err) {
                 // Always clear the plaintext copy; if migration failed the
                 // user can re-enter the token via the widget UI.
@@ -123,11 +129,11 @@ PlasmoidItem {
                     root.refresh()
                 } else {
                     console.log("[venice] legacy migration failed:", err)
-                    loadSecret()
+                    waitForKWalletReady()
                 }
             })
         } else {
-            loadSecret()
+            waitForKWalletReady()
         }
     }
 
@@ -149,6 +155,49 @@ PlasmoidItem {
             root.errorMessage = ""
             root.secretError = "Could not read KWallet — set token manually."
         }
+    }
+
+    Timer {
+        id: readyPoller
+        interval: root.kwalletReadyPollMs
+        repeat: true
+        onTriggered: root._probeKWalletReady()
+    }
+
+    function waitForKWalletReady() {
+        waitingForKWallet = true
+        _readyStartedAt = Date.now()
+        _readyInFlight = false
+        _probeKWalletReady()
+        readyPoller.start()
+    }
+
+    function _probeKWalletReady() {
+        if (_readyInFlight) return
+        if (!waitingForKWallet) {
+            readyPoller.stop()
+            return
+        }
+        if (Date.now() - _readyStartedAt >= kwalletReadyDeadlineMs) {
+            console.log("[venice] kwallet readiness deadline reached — proceeding to load anyway")
+            readyPoller.stop()
+            waitingForKWallet = false
+            loadSecret()
+            return
+        }
+        _readyInFlight = true
+        Secret.ready(execSource, kwalletScript, function(isReady, exitCode) {
+            _readyInFlight = false
+            if (!waitingForKWallet) return
+            if (isReady || exitCode === 2) {
+                // 0  = ready, load the secret.
+                // 2  = indeterminate (no qdbus / non-KDE backend) — skip gate.
+                readyPoller.stop()
+                waitingForKWallet = false
+                loadSecret()
+            }
+            // exitCode === 1: not ready yet. Keep polling until deadline.
+        })
     }
 
     function loadSecret() {
@@ -436,8 +485,10 @@ PlasmoidItem {
 
             // ---------------- Loading placeholder -----------------------
             ShadowedLabel {
-                visible: !root.needsToken && (root.loadingSecret || (root.loading && !root.hasBalance && !root.error))
-                text: root.loadingSecret ? "Reading KWallet…" : "Loading…"
+                visible: !root.needsToken && (root.waitingForKWallet || root.loadingSecret || (root.loading && !root.hasBalance && !root.error))
+                text: root.waitingForKWallet ? "Waiting for KWallet…"
+                    : root.loadingSecret ? "Reading KWallet…"
+                    : "Loading…"
                 Layout.alignment: Qt.AlignHCenter
                 color: root.effectiveTextColor
                 textOpacity: 0.7

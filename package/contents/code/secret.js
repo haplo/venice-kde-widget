@@ -140,3 +140,13 @@ function clear(dataSource, scriptPath, callback) {
         }
     })
 }
+
+function ready(dataSource, scriptPath, callback) {
+    var cmd = "sh " + shQuote(scriptPath) + " ready"
+    _run(dataSource, "ready", cmd, function(data) {
+        var exitCode = data["exit code"]
+        // true when kwalletd6 is running and the default wallet is open.
+        // false otherwise (including exit 2 "indeterminate").
+        callback(exitCode === 0, exitCode)
+    })
+}
