@@ -18,6 +18,53 @@ PlasmoidItem {
         ? PlasmaCore.Types.NoBackground
         : PlasmaCore.Types.DefaultBackground
 
+    readonly property color effectiveTextColor:
+        Plasmoid.configuration.useThemeTextColor
+            ? PlasmaCore.Theme.textColor
+            : Plasmoid.configuration.customTextColor
+    readonly property bool textShadowEnabled: Plasmoid.configuration.textShadowEnabled
+    readonly property color textShadowColor: Plasmoid.configuration.textShadowColor
+
+    // Drop-in replacement for PlasmaComponents.Label that renders an
+    // optional 1px offset duplicate underneath for legibility over
+    // wallpapers when the panel background is transparent.
+    component ShadowedLabel : Item {
+        id: shadowed
+        property alias text: fg.text
+        property alias font: fg.font
+        property alias horizontalAlignment: fg.horizontalAlignment
+        property alias verticalAlignment: fg.verticalAlignment
+        property alias wrapMode: fg.wrapMode
+        property color color: root.effectiveTextColor
+        property real textOpacity: 1.0
+
+        implicitWidth: fg.implicitWidth + (root.textShadowEnabled ? 1 : 0)
+        implicitHeight: fg.implicitHeight + (root.textShadowEnabled ? 1 : 0)
+
+        PlasmaComponents.Label {
+            visible: root.textShadowEnabled
+            text: fg.text
+            font: fg.font
+            color: root.textShadowColor
+            opacity: 0.85 * shadowed.textOpacity
+            horizontalAlignment: fg.horizontalAlignment
+            verticalAlignment: fg.verticalAlignment
+            wrapMode: fg.wrapMode
+            x: 1
+            y: 1
+            width: fg.width
+            height: fg.height
+        }
+
+        PlasmaComponents.Label {
+            id: fg
+            color: shadowed.color
+            opacity: shadowed.textOpacity
+            anchors.left: parent.left
+            anchors.top: parent.top
+        }
+    }
+
     // -- Secret state ---------------------------------------------------
     property string apiToken: ""
     property bool loadingSecret: true
@@ -234,14 +281,14 @@ PlasmoidItem {
                      : Kirigami.Theme.disabledTextColor
             }
 
-            PlasmaComponents.Label {
+            ShadowedLabel {
                 text: root.needsToken ? "Set token"
                     : root.error ? "—"
                     : root.hasBalance ? (root.hasDiem ? Math.round(root.diemPct) + "%"
                                                       : "$" + root.usdBalance.toFixed(2))
                     : "…"
                 font.pointSize: Kirigami.Theme.defaultFont.pointSize
-                color: PlasmaCore.Theme.textColor
+                color: root.effectiveTextColor
             }
         }
     }
@@ -263,11 +310,30 @@ PlasmoidItem {
                 Layout.fillWidth: true
                 spacing: Kirigami.Units.smallSpacing
 
-                PlasmaExtras.Heading {
-                    level: 2
-                    text: "Venice.ai Credits"
+                Item {
                     Layout.fillWidth: true
-                    horizontalAlignment: Text.AlignHCenter
+                    implicitHeight: heading.implicitHeight + (root.textShadowEnabled ? 1 : 0)
+
+                    PlasmaExtras.Heading {
+                        visible: root.textShadowEnabled
+                        level: 2
+                        text: heading.text
+                        anchors.fill: parent
+                        anchors.leftMargin: 1
+                        anchors.topMargin: 1
+                        horizontalAlignment: Text.AlignHCenter
+                        color: root.textShadowColor
+                        opacity: 0.85
+                    }
+
+                    PlasmaExtras.Heading {
+                        id: heading
+                        level: 2
+                        text: "Venice.ai Credits"
+                        anchors.fill: parent
+                        horizontalAlignment: Text.AlignHCenter
+                        color: root.effectiveTextColor
+                    }
                 }
 
                 Kirigami.Icon {
@@ -303,17 +369,19 @@ PlasmoidItem {
                     height: Kirigami.Units.iconSizes.large
                 }
 
-                PlasmaComponents.Label {
+                ShadowedLabel {
                     text: root.apiToken === "" ? "No API token set" : "API token is invalid or expired"
                     Layout.alignment: Qt.AlignHCenter
                     font.weight: Font.Bold
+                    color: root.effectiveTextColor
                 }
 
-                PlasmaComponents.Label {
+                ShadowedLabel {
                     text: "The token is stored securely in KWallet."
                     Layout.alignment: Qt.AlignHCenter
                     font.pointSize: Kirigami.Theme.smallFont.pointSize
-                    opacity: 0.7
+                    color: root.effectiveTextColor
+                    textOpacity: 0.7
                 }
 
                 QQC2.TextField {
@@ -360,11 +428,12 @@ PlasmoidItem {
             }
 
             // ---------------- Loading placeholder -----------------------
-            PlasmaComponents.Label {
+            ShadowedLabel {
                 visible: !root.needsToken && (root.loadingSecret || (root.loading && !root.hasBalance && !root.error))
                 text: root.loadingSecret ? "Reading KWallet…" : "Loading…"
                 Layout.alignment: Qt.AlignHCenter
-                opacity: 0.7
+                color: root.effectiveTextColor
+                textOpacity: 0.7
             }
 
             // ---------------- Balance display ---------------------------
@@ -376,25 +445,25 @@ PlasmoidItem {
                 RowLayout {
                     spacing: Kirigami.Units.smallSpacing
 
-                    PlasmaComponents.Label {
+                    ShadowedLabel {
                         text: root.diemBalance.toFixed(2)
                         font.pointSize: root.balanceFontSize
                         font.weight: Font.Bold
                         color: root.diemBalance > 0 ? root.diemColor : Kirigami.Theme.disabledTextColor
                     }
 
-                    PlasmaComponents.Label {
+                    ShadowedLabel {
                         text: "/ " + root.diemAllocation.toFixed(2)
                         font.pointSize: root.balanceFontSize
-                        color: PlasmaCore.Theme.textColor
-                        opacity: 0.6
+                        color: root.effectiveTextColor
+                        textOpacity: 0.6
                     }
 
-                    PlasmaComponents.Label {
+                    ShadowedLabel {
                         text: "DIEM"
                         font.pointSize: Kirigami.Theme.defaultFont.pointSize
-                        color: PlasmaCore.Theme.textColor
-                        opacity: 0.7
+                        color: root.effectiveTextColor
+                        textOpacity: 0.7
                     }
                 }
 
@@ -412,11 +481,11 @@ PlasmoidItem {
                     }
                 }
 
-                PlasmaComponents.Label {
+                ShadowedLabel {
                     text: Math.round(root.diemPct) + "% remaining"
                     font.pointSize: Kirigami.Theme.smallFont.pointSize
-                    color: PlasmaCore.Theme.textColor
-                    opacity: 0.6
+                    color: root.effectiveTextColor
+                    textOpacity: 0.6
                 }
             }
 
@@ -426,18 +495,18 @@ PlasmoidItem {
                 spacing: Kirigami.Units.smallSpacing
 
                 RowLayout {
-                    PlasmaComponents.Label {
+                    ShadowedLabel {
                         text: "$" + root.usdBalance.toFixed(2)
                         font.pointSize: root.balanceFontSize
                         font.weight: Font.Bold
-                        color: root.usdBalance > 0 ? PlasmaCore.Theme.textColor : Kirigami.Theme.disabledTextColor
+                        color: root.usdBalance > 0 ? root.effectiveTextColor : Kirigami.Theme.disabledTextColor
                     }
 
-                    PlasmaComponents.Label {
+                    ShadowedLabel {
                         text: "USD"
                         font.pointSize: Kirigami.Theme.defaultFont.pointSize
-                        color: PlasmaCore.Theme.textColor
-                        opacity: 0.7
+                        color: root.effectiveTextColor
+                        textOpacity: 0.7
                     }
                 }
             }

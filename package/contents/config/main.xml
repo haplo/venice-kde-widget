@@ -19,5 +19,17 @@
     <entry name="transparentBackground" type="Bool">
       <default>false</default>
     </entry>
+    <entry name="useThemeTextColor" type="Bool">
+      <default>true</default>
+    </entry>
+    <entry name="customTextColor" type="String">
+      <default>#ffffff</default>
+    </entry>
+    <entry name="textShadowEnabled" type="Bool">
+      <default>false</default>
+    </entry>
+    <entry name="textShadowColor" type="String">
+      <default>#000000</default>
+    </entry>
   </group>
 </kcfg>
