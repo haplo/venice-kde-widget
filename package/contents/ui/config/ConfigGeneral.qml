@@ -5,14 +5,14 @@ import org.kde.plasma.plasmoid 2.0
 import org.kde.plasma.components 3.0 as PlasmaComponents
 import org.kde.plasma.plasma5support 2.0 as P5Support
 import org.kde.kirigami 2.20 as Kirigami
-import "../code/secret.js" as Secret
+import "../../code/secret.js" as Secret
 
 Item {
     id: page
 
     // Resolve the absolute path of kwallet.sh relative to this file.
     readonly property string kwalletScript: {
-        var url = Qt.resolvedUrl("../code/kwallet.sh").toString()
+        var url = Qt.resolvedUrl("../../code/kwallet.sh").toString()
         if (url.indexOf("file://") === 0) return url.substring(7)
         return url
     }

@@ -17,10 +17,12 @@ package/
   contents/
     ui/
       main.qml          # Main widget UI
+      config/
+        ConfigGeneral.qml     # General settings page (token management)
+        ConfigAppearance.qml  # Appearance settings page (background, etc.)
     config/
-      config.qml         # Configuration dialog
-      ConfigGeneral.qml  # General settings tab
-      main.xml           # KConfig schema (legacy apiKey migration only)
+      config.qml            # ConfigModel (declares config categories)
+      main.xml              # KConfig schema (legacy apiKey migration + appearance prefs)
     code/
       api.js             # Venice.ai API client
       secret.js          # KWallet helper wrapper (drives kwallet.sh)

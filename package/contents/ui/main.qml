@@ -13,6 +13,11 @@ import "../code/secret.js" as Secret
 PlasmoidItem {
     id: root
 
+    // -- Appearance -----------------------------------------------------
+    Plasmoid.backgroundHints: Plasmoid.configuration.transparentBackground
+        ? PlasmaCore.Types.NoBackground
+        : PlasmaCore.Types.DefaultBackground
+
     // -- Secret state ---------------------------------------------------
     property string apiToken: ""
     property bool loadingSecret: true

@@ -15,4 +15,9 @@
       <default></default>
     </entry>
   </group>
+  <group name="Appearance">
+    <entry name="transparentBackground" type="Bool">
+      <default>false</default>
+    </entry>
+  </group>
 </kcfg>
