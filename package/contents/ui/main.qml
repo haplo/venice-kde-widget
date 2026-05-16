@@ -1,4 +1,5 @@
 import QtQuick 2.15
+import QtQuick.Effects
 import QtQuick.Layouts 1.15
 import QtQuick.Controls 2.15 as QQC2
 import org.kde.plasma.core 2.0 as PlasmaCore
@@ -304,15 +305,57 @@ PlasmoidItem {
                 height: Kirigami.Units.iconSizes.small
             }
 
-            Rectangle {
+            Item {
+                id: statusBadge
                 visible: !root.needsToken
-                width: Kirigami.Units.iconSizes.small
-                height: Kirigami.Units.iconSizes.small
-                radius: width / 2
-                color: root.error ? "#e74c3c"
-                     : root.hasBalance ? (root.hasDiem ? root.diemColor
-                                                       : (root.canConsume ? "#2ecc71" : "#e74c3c"))
-                     : Kirigami.Theme.disabledTextColor
+                width: Kirigami.Units.iconSizes.medium
+                height: Kirigami.Units.iconSizes.medium
+
+                // Colored disc — rendered to a layer so MultiEffect can sample
+                // it as a source. Hidden because the MultiEffect below paints
+                // the visible result.
+                Rectangle {
+                    id: statusDot
+                    anchors.fill: parent
+                    radius: width / 1.5
+                    color: root.error ? "#e74c3c"
+                         : root.hasBalance ? (root.hasDiem ? root.diemColor
+                                                           : (root.canConsume ? "#2ecc71" : "#e74c3c"))
+                         : Kirigami.Theme.disabledTextColor
+                    layer.enabled: true
+                    layer.smooth: true
+                    visible: false
+                }
+
+                // Venice logo, used purely as an alpha mask. Inset so the
+                // cutout sits inside the disc instead of touching its edge.
+                Image {
+                    id: veniceMask
+                    anchors.fill: parent
+                    anchors.margins: Math.round(parent.width * 0.15)
+                    source: Qt.resolvedUrl("../images/venice.png")
+                    sourceSize.width: width
+                    sourceSize.height: height
+                    fillMode: Image.PreserveAspectFit
+                    smooth: true
+                    mipmap: true
+                    layer.enabled: true
+                    visible: false
+                }
+
+                // Compose: keep the dot's pixels everywhere the mask is
+                // transparent, drop them where the logo is opaque. The
+                // threshold/spread pair gives a clean but slightly feathered
+                // cutout edge instead of using the mask's raw anti-aliasing.
+                MultiEffect {
+                    anchors.fill: parent
+                    source: statusDot
+                    maskEnabled: true
+                    maskSource: veniceMask
+                    maskInverted: true
+                    maskThresholdMin: 0.5
+                    maskSpreadAtMin: 0.4
+                }
             }
 
             ShadowedLabel {
