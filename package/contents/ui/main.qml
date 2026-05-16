@@ -88,13 +88,30 @@ PlasmoidItem {
     property real usdBalance: 0
     property real diemAllocation: 0
     property real diemPct: 0
-    property color diemColor: "#2ecc71"
+    property color diemColor: statusHealthyColor
     readonly property bool hasDiem: diemAllocation > 0
     property bool error: false
     property string errorMessage: ""
 
     property real balanceFontSize: Kirigami.Theme.defaultFont.pointSize + 4
     property real smallBalanceFontSize: Kirigami.Theme.defaultFont.pointSize + 1
+
+    // -- Status palette -------------------------------------------------
+    // Single source of truth for the colors used by the compact status dot,
+    // the DIEM progress bar, and any error/secret labels. Keep these in sync
+    // across all consumers so the UI reads consistently.
+    readonly property color statusHealthyColor: "#16a34a"  // > 75% DIEM remaining
+    readonly property color statusWarningColor: "#d97706"  // 25–75% DIEM remaining
+    readonly property color statusCriticalColor: "#dc2626" // < 25% DIEM remaining / error / cannot consume
+    readonly property color statusDepletedColor: "#1f2937" // DIEM allocation > 0 but both balances drained
+    readonly property color statusErrorColor: statusCriticalColor
+
+    // True when the account has a DIEM allocation but every spendable
+    // balance has been used up. Takes precedence over the percentage tiers.
+    readonly property bool isDepleted: hasBalance
+        && diemAllocation > 0
+        && diemBalance <= 0
+        && usdBalance <= 0
 
     // Pick a foreground color (near-black or near-white) that contrasts well
     // with the given background color, using a perceptual luminance estimate.
@@ -270,12 +287,14 @@ PlasmoidItem {
             diemPct = 0
         }
 
-        if (diemPct > 75) {
-            diemColor = "#2ecc71"
+        if (isDepleted) {
+            diemColor = statusDepletedColor
+        } else if (diemPct > 75) {
+            diemColor = statusHealthyColor
         } else if (diemPct >= 25) {
-            diemColor = "#f1c40f"
+            diemColor = statusWarningColor
         } else {
-            diemColor = "#e74c3c"
+            diemColor = statusCriticalColor
         }
     }
 
@@ -318,9 +337,9 @@ PlasmoidItem {
                     id: statusDot
                     anchors.fill: parent
                     radius: width / 1.5
-                    color: root.error ? "#e74c3c"
+                    color: root.error ? root.statusErrorColor
                          : root.hasBalance ? (root.hasDiem ? root.diemColor
-                                                           : (root.canConsume ? "#2ecc71" : "#e74c3c"))
+                                                           : (root.canConsume ? root.statusHealthyColor : root.statusCriticalColor))
                          : Kirigami.Theme.disabledTextColor
                     layer.enabled: true
                     layer.smooth: true
@@ -476,7 +495,7 @@ PlasmoidItem {
                     text: root.secretError
                     Layout.fillWidth: true
                     wrapMode: Text.WordWrap
-                    color: "#e74c3c"
+                    color: root.statusErrorColor
                     font.pointSize: Kirigami.Theme.smallFont.pointSize
                 }
 
