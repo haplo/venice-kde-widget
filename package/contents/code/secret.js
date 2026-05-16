@@ -14,6 +14,7 @@
 //     Secret.load(execSource, scriptPath, function(token, error) { ... })
 //     Secret.save(execSource, scriptPath, token, function(ok, error) { ... })
 //     Secret.clear(execSource, scriptPath, function(ok, error) { ... })
+//     Secret.cancelAll(execSource) // drop any in-flight callbacks
 //
 // `token` in the load callback is "" when no secret is stored (not an error).
 // `error` is null on success.
@@ -28,23 +29,57 @@ function shQuote(value) {
 }
 
 // Pending callbacks keyed by sourceName so we can dispatch via handleData().
+// Each entry is { generation: <int>, callback: function }. The generation
+// counter lets cancel() invalidate an in-flight call so a late response
+// (e.g. arriving after a watchdog timeout) is silently dropped instead of
+// stomping on caller state.
 var _pending = {}
+var _generation = 0
 
 // Caller wires this to the DataSource's onNewData signal.
 function handleData(dataSource, sourceName, data) {
-    var cb = _pending[sourceName]
-    if (!cb) return
+    var entry = _pending[sourceName]
+    if (!entry) return
     delete _pending[sourceName]
     dataSource.disconnectSource(sourceName)
-    cb(data)
+    entry.callback(data)
+}
+
+// Cancel an in-flight call so a late response is ignored. Safe to call
+// whether or not the call is still pending. Returns true if a pending
+// call was cancelled.
+function cancel(dataSource, command) {
+    if (!_pending[command]) return false
+    delete _pending[command]
+    dataSource.disconnectSource(command)
+    return true
+}
+
+// Cancel every in-flight call. Used by the widget watchdog to ensure a
+// late response can't stomp on user-visible state after we've already
+// given up and moved on.
+function cancelAll(dataSource) {
+    var cancelled = 0
+    for (var cmd in _pending) {
+        if (!Object.prototype.hasOwnProperty.call(_pending, cmd)) continue
+        delete _pending[cmd]
+        dataSource.disconnectSource(cmd)
+        cancelled += 1
+    }
+    return cancelled
 }
 
 function _run(dataSource, subcommand, command, callback) {
-    console.log("[venice/secret] running:", subcommand)
-    _pending[command] = function(data) {
-        var exitCode = data["exit code"]
-        console.log("[venice/secret]", subcommand, "exit=", exitCode)
-        callback(data)
+    _generation += 1
+    var myGen = _generation
+    console.log("[venice/secret] running:", subcommand, "gen=", myGen)
+    _pending[command] = {
+        generation: myGen,
+        callback: function(data) {
+            var exitCode = data["exit code"]
+            console.log("[venice/secret]", subcommand, "exit=", exitCode, "gen=", myGen)
+            callback(data)
+        }
     }
     dataSource.connectSource(command)
 }

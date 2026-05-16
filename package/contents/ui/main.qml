@@ -73,13 +73,16 @@ PlasmoidItem {
 
     // If the helper never reports back (kwalletd6 down, helper missing, etc.)
     // recover gracefully so the UI doesn't sit on "Reading KWallet…" forever.
+    // Cancel any pending helper calls so a late response can't stomp on
+    // user-visible state after we've given up.
     Timer {
         id: secretWatchdog
-        interval: 5000
+        interval: 10000
         repeat: false
         onTriggered: {
             if (!root.loadingSecret) return
             console.log("[venice] secret watchdog fired — KWallet helper did not respond")
+            Secret.cancelAll(execSource)
             root.loadingSecret = false
             root.needsToken = true
             root.error = false
@@ -129,10 +132,13 @@ PlasmoidItem {
     }
 
     // Single DataSource shared by secret.js for all helper invocations.
+    // The onNewData handler is REQUIRED: secret.js dispatches its pending
+    // callbacks from here. Without it every load/save/clear silently hangs.
     P5Support.DataSource {
         id: execSource
         engine: "executable"
         connectedSources: []
+        onNewData: (sourceName, data) => Secret.handleData(execSource, sourceName, data)
     }
 
     function refresh() {
