@@ -30,6 +30,7 @@ PlasmoidItem {
     property real diemAllocation: 0
     property real diemPct: 0
     property color diemColor: "#2ecc71"
+    readonly property bool hasDiem: diemAllocation > 0
     property bool error: false
     property string errorMessage: ""
 
@@ -223,14 +224,16 @@ PlasmoidItem {
                 height: Kirigami.Units.iconSizes.small
                 radius: width / 2
                 color: root.error ? "#e74c3c"
-                     : root.hasBalance ? root.diemColor
+                     : root.hasBalance ? (root.hasDiem ? root.diemColor
+                                                       : (root.canConsume ? "#2ecc71" : "#e74c3c"))
                      : Kirigami.Theme.disabledTextColor
             }
 
             PlasmaComponents.Label {
                 text: root.needsToken ? "Set token"
                     : root.error ? "—"
-                    : root.hasBalance ? Math.round(root.diemPct) + "%"
+                    : root.hasBalance ? (root.hasDiem ? Math.round(root.diemPct) + "%"
+                                                      : "$" + root.usdBalance.toFixed(2))
                     : "…"
                 font.pointSize: Kirigami.Theme.defaultFont.pointSize
                 color: PlasmaCore.Theme.textColor
@@ -360,21 +363,8 @@ PlasmoidItem {
             }
 
             // ---------------- Balance display ---------------------------
-            RowLayout {
-                visible: root.hasBalance && !root.needsToken
-                Layout.alignment: Qt.AlignHCenter
-                spacing: Kirigami.Units.smallSpacing
-
-                Rectangle {
-                    width: Kirigami.Units.iconSizes.tiny
-                    height: Kirigami.Units.iconSizes.tiny
-                    radius: width / 2
-                    color: root.canConsume ? "#2ecc71" : "#e74c3c"
-                }
-            }
-
             ColumnLayout {
-                visible: root.hasBalance && !root.needsToken
+                visible: root.hasBalance && !root.needsToken && root.hasDiem
                 Layout.fillWidth: true
                 spacing: Kirigami.Units.smallSpacing
 
@@ -382,15 +372,15 @@ PlasmoidItem {
                     spacing: Kirigami.Units.smallSpacing
 
                     PlasmaComponents.Label {
-                        text: root.diemBalance > 0 ? root.diemBalance.toFixed(1) : "\u2014"
-                        font.pointSize: root.diemBalance > 0 ? root.balanceFontSize : root.smallBalanceFontSize
+                        text: root.diemBalance.toFixed(2)
+                        font.pointSize: root.balanceFontSize
                         font.weight: Font.Bold
                         color: root.diemBalance > 0 ? root.diemColor : Kirigami.Theme.disabledTextColor
                     }
 
                     PlasmaComponents.Label {
-                        text: root.diemBalance > 0 ? "/ " + root.diemAllocation.toFixed(0) : ""
-                        font.pointSize: root.diemBalance > 0 ? root.balanceFontSize : root.smallBalanceFontSize
+                        text: "/ " + root.diemAllocation.toFixed(2)
+                        font.pointSize: root.balanceFontSize
                         color: PlasmaCore.Theme.textColor
                         opacity: 0.6
                     }
@@ -432,8 +422,8 @@ PlasmoidItem {
 
                 RowLayout {
                     PlasmaComponents.Label {
-                        text: root.usdBalance > 0 ? "$" + root.usdBalance.toFixed(2) : "\u2014"
-                        font.pointSize: root.usdBalance > 0 ? root.balanceFontSize : root.smallBalanceFontSize
+                        text: "$" + root.usdBalance.toFixed(2)
+                        font.pointSize: root.balanceFontSize
                         font.weight: Font.Bold
                         color: root.usdBalance > 0 ? PlasmaCore.Theme.textColor : Kirigami.Theme.disabledTextColor
                     }
