@@ -89,6 +89,13 @@ PlasmoidItem {
     property real balanceFontSize: Kirigami.Theme.defaultFont.pointSize + 4
     property real smallBalanceFontSize: Kirigami.Theme.defaultFont.pointSize + 1
 
+    // Pick a foreground color (near-black or near-white) that contrasts well
+    // with the given background color, using a perceptual luminance estimate.
+    function contrastTextFor(c) {
+        var L = 0.299 * c.r + 0.587 * c.g + 0.114 * c.b
+        return L > 0.6 ? Qt.rgba(0, 0, 0, 0.87) : Qt.rgba(1, 1, 1, 0.95)
+    }
+
     // Absolute file path of the kwallet.sh helper. Qt.resolvedUrl returns
     // a "file://" URL; strip the scheme for the executable engine.
     readonly property string kwalletScript: {
@@ -468,24 +475,57 @@ PlasmoidItem {
                 }
 
                 Rectangle {
+                    id: diemTrack
                     Layout.fillWidth: true
-                    height: Kirigami.Units.smallSpacing
+                    height: Math.round(Kirigami.Units.gridUnit * 1.3)
                     radius: height / 2
                     color: Qt.rgba(root.diemColor.r, root.diemColor.g, root.diemColor.b, 0.2)
 
+                    readonly property real fillWidth: width * Math.min(root.diemPct / 100, 1.0)
+                    readonly property string pctText: Math.round(root.diemPct) + "% remaining"
+                    readonly property int pctPointSize: Kirigami.Theme.smallFont.pointSize
+
+                    // Filled portion. Clips its child label so the "on-fill"
+                    // text is only visible where the bar is colored.
                     Rectangle {
+                        id: diemFill
                         height: parent.height
                         radius: parent.radius
-                        width: parent.width * Math.min(root.diemPct / 100, 1.0)
+                        width: diemTrack.fillWidth
                         color: root.diemColor
-                    }
-                }
+                        clip: true
 
-                ShadowedLabel {
-                    text: Math.round(root.diemPct) + "% remaining"
-                    font.pointSize: Kirigami.Theme.smallFont.pointSize
-                    color: root.effectiveTextColor
-                    textOpacity: 0.6
+                        PlasmaComponents.Label {
+                            text: diemTrack.pctText
+                            font.pointSize: diemTrack.pctPointSize
+                            font.weight: Font.Bold
+                            color: root.contrastTextFor(root.diemColor)
+                            // Center within the track, not within the fill,
+                            // so the text doesn't shift as the bar fills.
+                            x: (diemTrack.width - width) / 2
+                            y: (diemTrack.height - height) / 2
+                        }
+                    }
+
+                    // Unfilled portion. A clipping Item covers everything to
+                    // the right of the fill so this copy of the label is only
+                    // visible over the faded track.
+                    Item {
+                        anchors.top: parent.top
+                        anchors.bottom: parent.bottom
+                        x: diemTrack.fillWidth
+                        width: Math.max(0, diemTrack.width - diemTrack.fillWidth)
+                        clip: true
+
+                        PlasmaComponents.Label {
+                            text: diemTrack.pctText
+                            font.pointSize: diemTrack.pctPointSize
+                            font.weight: Font.Bold
+                            color: root.effectiveTextColor
+                            x: (diemTrack.width - width) / 2 - parent.x
+                            y: (diemTrack.height - height) / 2
+                        }
+                    }
                 }
             }
 
