@@ -36,6 +36,7 @@ PlasmoidItem {
         property alias horizontalAlignment: fg.horizontalAlignment
         property alias verticalAlignment: fg.verticalAlignment
         property alias wrapMode: fg.wrapMode
+        property alias elide: fg.elide
         property color color: root.effectiveTextColor
         property real textOpacity: 1.0
 
@@ -63,6 +64,9 @@ PlasmoidItem {
             opacity: shadowed.textOpacity
             anchors.left: parent.left
             anchors.top: parent.top
+            anchors.right: parent.right
+            anchors.rightMargin: root.textShadowEnabled ? 1 : 0
+            horizontalAlignment: Text.AlignLeft
         }
     }
 
@@ -307,38 +311,93 @@ PlasmoidItem {
         onTriggered: root.refresh()
     }
 
+    // -- Compact representation prefs ----------------------------------
+    readonly property bool compactShowIconPref: Plasmoid.configuration.compactShowIcon
+    readonly property string compactTextMode: Plasmoid.configuration.compactTextMode
+    readonly property bool compactShowPct:    compactTextMode === "percentage" || compactTextMode === "both"
+    readonly property bool compactShowAmount: compactTextMode === "amount"     || compactTextMode === "both"
+    // If the user disables both icon and text, force the icon on so the
+    // widget is never invisible/unclickable. Also force the icon when the
+    // widget is in a state that has no meaningful text (needs-token / error)
+    // while the user opted out of text — the icon then carries the message.
+    readonly property bool compactHasText: compactShowPct || compactShowAmount
+    readonly property bool compactForceIcon: !compactHasText
+        || root.needsToken
+        || root.error
+    readonly property bool compactShowIcon: compactShowIconPref || compactForceIcon
+
     compactRepresentation: MouseArea {
-        implicitWidth: Kirigami.Units.gridUnit * 4
-        implicitHeight: Kirigami.Units.gridUnit * 2
+        id: compactRoot
+
+        readonly property bool horizontal: Plasmoid.formFactor === PlasmaCore.Types.Horizontal
+        readonly property bool vertical:   Plasmoid.formFactor === PlasmaCore.Types.Vertical
+
+        // Available thickness perpendicular to the panel's main axis.
+        readonly property int thickness: horizontal ? height
+                                       : vertical   ? width
+                                       : Math.min(width, height)
+
+        readonly property int iconSize: {
+            var small = Kirigami.Units.iconSizes.small
+            var med   = Kirigami.Units.iconSizes.medium
+            var pad   = 2 * Kirigami.Units.smallSpacing
+            if (horizontal || vertical) {
+                return Math.max(small, Math.min(med, thickness - pad))
+            }
+            return med
+        }
+
+        // Implicit sizes drive the axis the panel does NOT force.
+        // - Horizontal panel: panel controls height; we report a content
+        //   width so the panel allocates enough room.
+        // - Vertical panel: panel controls width; we report a content height.
+        // - Desktop/planar: both implicit sizes are honored.
+        implicitWidth:  compactContent.implicitWidth  + 2 * Kirigami.Units.smallSpacing
+        implicitHeight: compactContent.implicitHeight + 2 * Kirigami.Units.smallSpacing
 
         onClicked: root.expanded = !root.expanded
 
-        RowLayout {
+        GridLayout {
+            id: compactContent
             anchors.centerIn: parent
-            spacing: Kirigami.Units.smallSpacing
+            flow: compactRoot.vertical ? GridLayout.TopToBottom : GridLayout.LeftToRight
+            rowSpacing: Kirigami.Units.smallSpacing
+            columnSpacing: Kirigami.Units.smallSpacing
 
+            // Needs-token icon. Distinct from the status badge so the
+            // "no token" state has its own glyph even when text is hidden.
             Kirigami.Icon {
-                visible: root.needsToken
+                visible: root.needsToken && root.compactShowIcon
                 source: "dialog-password"
-                width: Kirigami.Units.iconSizes.small
-                height: Kirigami.Units.iconSizes.small
+                Layout.preferredWidth: compactRoot.iconSize
+                Layout.preferredHeight: compactRoot.iconSize
+                Layout.alignment: Qt.AlignCenter
             }
 
+            // Error icon. Visible only when there's no token problem so we
+            // don't double up with the password icon.
+            Kirigami.Icon {
+                visible: !root.needsToken && root.error && root.compactShowIcon
+                source: "dialog-warning"
+                color: root.statusErrorColor
+                Layout.preferredWidth: compactRoot.iconSize
+                Layout.preferredHeight: compactRoot.iconSize
+                Layout.alignment: Qt.AlignCenter
+            }
+
+            // Status badge — the colored disc with the Venice logo cut out.
             Item {
                 id: statusBadge
-                visible: !root.needsToken
-                width: Kirigami.Units.iconSizes.medium
-                height: Kirigami.Units.iconSizes.medium
+                visible: !root.needsToken && !root.error && root.compactShowIcon
+                Layout.preferredWidth: compactRoot.iconSize
+                Layout.preferredHeight: compactRoot.iconSize
+                Layout.alignment: Qt.AlignCenter
 
-                // Colored disc — rendered to a layer so MultiEffect can sample
-                // it as a source. Hidden because the MultiEffect below paints
-                // the visible result.
                 Rectangle {
                     id: statusDot
                     anchors.fill: parent
                     radius: width / 1.5
-                    color: root.error ? root.statusErrorColor
-                         : root.hasBalance ? (root.hasDiem ? root.diemColor
+                    color: root.hasBalance ? (root.hasDiem ? root.diemColor
                                                            : (root.canConsume ? root.statusHealthyColor : root.statusCriticalColor))
                          : Kirigami.Theme.disabledTextColor
                     layer.enabled: true
@@ -346,8 +405,6 @@ PlasmoidItem {
                     visible: false
                 }
 
-                // Venice logo, used purely as an alpha mask. Inset so the
-                // cutout sits inside the disc instead of touching its edge.
                 Image {
                     id: veniceMask
                     anchors.fill: parent
@@ -362,10 +419,6 @@ PlasmoidItem {
                     visible: false
                 }
 
-                // Compose: keep the dot's pixels everywhere the mask is
-                // transparent, drop them where the logo is opaque. The
-                // threshold/spread pair gives a clean but slightly feathered
-                // cutout edge instead of using the mask's raw anti-aliasing.
                 MultiEffect {
                     anchors.fill: parent
                     source: statusDot
@@ -378,13 +431,45 @@ PlasmoidItem {
             }
 
             ShadowedLabel {
-                text: root.needsToken ? "Set token"
-                    : root.error ? "—"
-                    : root.hasBalance ? (root.hasDiem ? Math.round(root.diemPct) + "%"
-                                                      : "$" + root.usdBalance.toFixed(2))
-                    : "…"
+                id: compactLabel
+                // Stay silent in needs-token / error states when the user
+                // opted out of text — the dedicated icons above carry the
+                // message. Otherwise show whatever the user asked for.
+                readonly property string textForState: {
+                    if (!root.compactHasText) return ""
+                    if (root.needsToken) return "Set token"
+                    if (root.error) return "—"
+                    if (!root.hasBalance) return "..."
+
+                    var pct = Math.round(root.diemPct) + "%"
+                    var amount = root.hasDiem ? root.diemBalance.toFixed(2) + " DIEM"
+                                              : "$" + root.usdBalance.toFixed(2)
+
+                    if (root.compactShowPct && root.compactShowAmount) {
+                        return root.hasDiem ? (pct + " \u00b7 " + amount) : amount
+                    }
+                    if (root.compactShowPct) {
+                        return root.hasDiem ? pct : amount
+                    }
+                    return amount
+                }
+
+                visible: textForState !== ""
+                text: textForState
                 font.pointSize: Kirigami.Theme.defaultFont.pointSize
                 color: root.effectiveTextColor
+                elide: Text.ElideRight
+                horizontalAlignment: Text.AlignHCenter
+                Layout.alignment: Qt.AlignCenter
+                // Reserve room for the icon (only one of the three is ever
+                // visible at a time) so the label elides instead of pushing
+                // the layout past the panel cell.
+                Layout.maximumWidth: compactRoot.horizontal
+                    ? Math.max(0, compactRoot.width - 2 * Kirigami.Units.smallSpacing
+                        - (root.compactShowIcon ? compactRoot.iconSize + compactContent.columnSpacing : 0))
+                    : compactRoot.vertical
+                        ? Math.max(0, compactRoot.width - 2 * Kirigami.Units.smallSpacing)
+                        : -1
             }
         }
     }

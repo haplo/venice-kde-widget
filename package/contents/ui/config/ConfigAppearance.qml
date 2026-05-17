@@ -15,6 +15,22 @@ Item {
     property string cfg_customTextColor: "#ffffff"
     property alias cfg_textShadowEnabled: shadowCheckBox.checked
     property string cfg_textShadowColor: "#000000"
+    property alias cfg_compactShowIcon: showIconCheckBox.checked
+    property string cfg_compactTextMode: "percentage"
+
+    readonly property var compactTextModes: [
+        { value: "percentage", label: i18n("Percentage") },
+        { value: "amount",     label: i18n("Available amount") },
+        { value: "both",       label: i18n("Both") },
+        { value: "none",       label: i18n("None") }
+    ]
+
+    function _indexForTextMode(value) {
+        for (var i = 0; i < compactTextModes.length; ++i) {
+            if (compactTextModes[i].value === value) return i
+        }
+        return 0
+    }
 
     ColumnLayout {
         anchors {
@@ -113,12 +129,50 @@ Item {
                     font.family: "monospace"
                 }
             }
+
+            Item {
+                Kirigami.FormData.isSection: true
+            }
+
+            QQC2.CheckBox {
+                id: showIconCheckBox
+                Kirigami.FormData.label: i18n("Compact view:")
+                text: i18n("Display icon")
+            }
+
+            QQC2.ComboBox {
+                id: textModeCombo
+                Kirigami.FormData.label: i18n("Text:")
+                textRole: "label"
+                valueRole: "value"
+                model: page.compactTextModes
+                currentIndex: page._indexForTextMode(page.cfg_compactTextMode)
+                onActivated: page.cfg_compactTextMode = page.compactTextModes[currentIndex].value
+
+                Connections {
+                    target: page
+                    function onCfg_compactTextModeChanged() {
+                        var idx = page._indexForTextMode(page.cfg_compactTextMode)
+                        if (idx !== textModeCombo.currentIndex) {
+                            textModeCombo.currentIndex = idx
+                        }
+                    }
+                }
+            }
         }
 
         PlasmaComponents.Label {
             Layout.fillWidth: true
             wrapMode: Text.WordWrap
             text: i18n("When the background is transparent, set a custom text color and/or shadow so the widget remains legible over any wallpaper.")
+            opacity: 0.7
+            font.pointSize: Kirigami.Theme.smallFont.pointSize
+        }
+
+        PlasmaComponents.Label {
+            Layout.fillWidth: true
+            wrapMode: Text.WordWrap
+            text: i18n("\"Available amount\" shows DIEM when your account has a DIEM allocation, otherwise USD. If both the icon and text are disabled, the icon is shown so the widget remains usable.")
             opacity: 0.7
             font.pointSize: Kirigami.Theme.smallFont.pointSize
         }

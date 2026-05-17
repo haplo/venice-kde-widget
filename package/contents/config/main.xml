@@ -22,5 +22,11 @@
     <entry name="textShadowColor" type="String">
       <default>#000000</default>
     </entry>
+    <entry name="compactShowIcon" type="Bool">
+      <default>true</default>
+    </entry>
+    <entry name="compactTextMode" type="String">
+      <default>percentage</default>
+    </entry>
   </group>
 </kcfg>
