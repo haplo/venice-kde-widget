@@ -464,7 +464,7 @@ PlasmoidItem {
                 Image {
                     id: veniceMask
                     anchors.fill: parent
-                    anchors.margins: Math.round(parent.width * 0.15)
+                    anchors.margins: Math.round(parent.width * 0.05)
                     source: Qt.resolvedUrl("../images/venice.png")
                     sourceSize.width: width
                     sourceSize.height: height
@@ -481,8 +481,9 @@ PlasmoidItem {
                     maskEnabled: true
                     maskSource: veniceMask
                     maskInverted: true
-                    maskThresholdMin: 0.5
-                    maskSpreadAtMin: 0.4
+                    maskThresholdMin: 0.4
+                    maskSpreadAtMax: 0.25
+                    maskSpreadAtMin: 0.25
                 }
             }
 
