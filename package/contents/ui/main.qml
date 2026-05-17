@@ -510,6 +510,16 @@ PlasmoidItem {
                     return amount
                 }
 
+                // When wrapping, drop the middle-dot separator and use an
+                // explicit line break so vertical panels show e.g.:
+                //   72%
+                //   143.50 DIEM
+                readonly property string displayText: {
+                    if (wantWrap && textForState.indexOf("\u00b7") !== -1)
+                        return textForState.replace(" \u00b7 ", "\n")
+                    return textForState
+                }
+
                 // Natural single-line width of the current text. TextMetrics
                 // is the right tool here: FontMetrics only knows glyph
                 // heights, not the width of a specific string.
@@ -552,7 +562,7 @@ PlasmoidItem {
                 implicitWidth: targetTextWidth + (root.textShadowEnabled ? 1 : 0)
 
                 visible: textForState !== ""
-                text: textForState
+                text: displayText
                 font.pointSize: Kirigami.Theme.defaultFont.pointSize
                 color: root.effectiveTextColor
                 horizontalAlignment: Text.AlignHCenter
