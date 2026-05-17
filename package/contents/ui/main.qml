@@ -607,6 +607,19 @@ PlasmoidItem {
                     Layout.fillWidth: true
                     implicitHeight: heading.implicitHeight + (root.textShadowEnabled ? 1 : 0)
 
+                    Image {
+                        source: Qt.resolvedUrl("../images/venice.png")
+                        width: Kirigami.Units.iconSizes.smallMedium
+                        height: Kirigami.Units.iconSizes.smallMedium
+                        sourceSize.width: width
+                        sourceSize.height: height
+                        fillMode: Image.PreserveAspectFit
+                        smooth: true
+                        mipmap: true
+                        anchors.left: parent.left
+                        anchors.verticalCenter: parent.verticalCenter
+                    }
+
                     PlasmaExtras.Heading {
                         visible: root.textShadowEnabled
                         level: 2
