@@ -37,6 +37,7 @@ PlasmoidItem {
         property alias verticalAlignment: fg.verticalAlignment
         property alias wrapMode: fg.wrapMode
         property alias elide: fg.elide
+        property alias maximumLineCount: fg.maximumLineCount
         property color color: root.effectiveTextColor
         property real textOpacity: 1.0
 
@@ -52,6 +53,8 @@ PlasmoidItem {
             horizontalAlignment: fg.horizontalAlignment
             verticalAlignment: fg.verticalAlignment
             wrapMode: fg.wrapMode
+            elide: fg.elide
+            maximumLineCount: fg.maximumLineCount
             x: 1
             y: 1
             width: fg.width
@@ -65,7 +68,9 @@ PlasmoidItem {
             anchors.left: parent.left
             anchors.top: parent.top
             anchors.right: parent.right
+            anchors.bottom: parent.bottom
             anchors.rightMargin: root.textShadowEnabled ? 1 : 0
+            anchors.bottomMargin: root.textShadowEnabled ? 1 : 0
             horizontalAlignment: Text.AlignLeft
         }
     }
@@ -328,6 +333,7 @@ PlasmoidItem {
 
     compactRepresentation: MouseArea {
         id: compactRoot
+        clip: true
 
         readonly property bool horizontal: Plasmoid.formFactor === PlasmaCore.Types.Horizontal
         readonly property bool vertical:   Plasmoid.formFactor === PlasmaCore.Types.Vertical
@@ -347,19 +353,69 @@ PlasmoidItem {
             return med
         }
 
-        // Implicit sizes drive the axis the panel does NOT force.
-        // - Horizontal panel: panel controls height; we report a content
-        //   width so the panel allocates enough room.
-        // - Vertical panel: panel controls width; we report a content height.
-        // - Desktop/planar: both implicit sizes are honored.
-        implicitWidth:  compactContent.implicitWidth  + 2 * Kirigami.Units.smallSpacing
-        implicitHeight: compactContent.implicitHeight + 2 * Kirigami.Units.smallSpacing
+        // Hard caps so the widget can't bully neighboring panel widgets even
+        // when the text would otherwise render quite wide.
+        readonly property int maxLabelWidth: Kirigami.Units.gridUnit * 12
+        // Below this natural single-line width, always stay single-line even
+        // if 2 lines are available — wrapping short text looks awkward.
+        readonly property int shortTextThreshold: Kirigami.Units.gridUnit * 5
+
+        // -- Panel cell sizing via Layout attached properties ---------------
+        // Plasma's CompactApplet.qml forces `anchors.fill` on the compact
+        // representation, so `implicitWidth`/`implicitHeight` are ignored.
+        // The panel allocates space based on Layout.* attached properties
+        // instead (same pattern used by the digital clock, system monitor,
+        // and the default compact representation).
+
+        // Width along the icon→label axis (computed once, reused below).
+        readonly property int _contentWidth: {
+            var icon = root.compactShowIcon ? iconSize + compactContent.columnSpacing : 0
+            var label = compactLabel.visible ? compactLabel.targetTextWidth : 0
+            return icon + label + 2 * Kirigami.Units.smallSpacing
+        }
+        readonly property int _contentHeight: {
+            var icon = root.compactShowIcon ? iconSize + compactContent.rowSpacing : 0
+            var label = compactLabel.visible
+                ? Math.ceil(compactLabel.lineHeight) * compactLabel.availableLines
+                : 0
+            return icon + label + 2 * Kirigami.Units.smallSpacing
+        }
+
+        Layout.fillHeight: horizontal
+        Layout.fillWidth:  vertical
+
+        Layout.minimumWidth: {
+            switch (Plasmoid.formFactor) {
+            case PlasmaCore.Types.Vertical:
+                return 0
+            case PlasmaCore.Types.Horizontal:
+                return _contentWidth
+            default:
+                return Kirigami.Units.gridUnit * 3
+            }
+        }
+        Layout.preferredWidth: Layout.minimumWidth
+        Layout.maximumWidth:   Layout.minimumWidth
+
+        Layout.minimumHeight: {
+            switch (Plasmoid.formFactor) {
+            case PlasmaCore.Types.Vertical:
+                return _contentHeight
+            case PlasmaCore.Types.Horizontal:
+                return 0
+            default:
+                return Kirigami.Units.gridUnit * 3
+            }
+        }
+        Layout.preferredHeight: Layout.minimumHeight
+        Layout.maximumHeight:   Layout.minimumHeight
 
         onClicked: root.expanded = !root.expanded
 
         GridLayout {
             id: compactContent
-            anchors.centerIn: parent
+            anchors.fill: parent
+            anchors.margins: Kirigami.Units.smallSpacing
             flow: compactRoot.vertical ? GridLayout.TopToBottom : GridLayout.LeftToRight
             rowSpacing: Kirigami.Units.smallSpacing
             columnSpacing: Kirigami.Units.smallSpacing
@@ -454,22 +510,68 @@ PlasmoidItem {
                     return amount
                 }
 
+                // Natural single-line width of the current text. TextMetrics
+                // is the right tool here: FontMetrics only knows glyph
+                // heights, not the width of a specific string.
+                readonly property real naturalWidth: Math.ceil(textMetrics.advanceWidth)
+                readonly property real lineHeight: Math.max(1, textMetrics.height)
+
+                // How many lines we are allowed to render. On a horizontal
+                // panel this is limited by the cell height; everywhere else
+                // we permit up to 2.
+                readonly property int availableLines: {
+                    if (!compactRoot.horizontal) return 2
+                    var avail = compactRoot.height - 2 * Kirigami.Units.smallSpacing
+                    return Math.max(1, Math.min(2, Math.floor(avail / lineHeight)))
+                }
+
+                // Whether to actually wrap. Very short strings always stay
+                // on a single line even if we could afford two.
+                readonly property bool wantWrap: availableLines > 1
+                    && naturalWidth > compactRoot.shortTextThreshold
+
+                // The width we will *ask* the layout for. Bounded by
+                // maxLabelWidth so we never force the panel to allocate an
+                // unreasonable amount of horizontal space.
+                readonly property int targetTextWidth: {
+                    var cap = compactRoot.maxLabelWidth
+                    if (wantWrap) {
+                        // Aim to wrap near the midpoint of the text. Add a
+                        // grid unit of slack so the wrap lands on a word
+                        // boundary rather than mid-word.
+                        return Math.min(cap, Math.ceil(naturalWidth / 2) + Kirigami.Units.gridUnit)
+                    }
+                    return Math.min(cap, naturalWidth)
+                }
+
+                // Override the ShadowedLabel's default implicitWidth (full
+                // un-wrapped text width) so the parent GridLayout sees a
+                // bounded value.  This is what ultimately drives
+                // compactContent.implicitWidth → compactRoot.implicitWidth →
+                // the panel cell allocation.
+                implicitWidth: targetTextWidth + (root.textShadowEnabled ? 1 : 0)
+
                 visible: textForState !== ""
                 text: textForState
                 font.pointSize: Kirigami.Theme.defaultFont.pointSize
                 color: root.effectiveTextColor
-                elide: Text.ElideRight
                 horizontalAlignment: Text.AlignHCenter
+                verticalAlignment: Text.AlignVCenter
+                wrapMode: wantWrap ? Text.Wrap : Text.NoWrap
+                elide: Text.ElideRight
+                maximumLineCount: availableLines
+
+                Layout.preferredWidth: targetTextWidth
+                Layout.maximumWidth: targetTextWidth
+                Layout.minimumWidth: Math.min(targetTextWidth, Kirigami.Units.gridUnit * 3)
+                Layout.fillHeight: compactRoot.horizontal
                 Layout.alignment: Qt.AlignCenter
-                // Reserve room for the icon (only one of the three is ever
-                // visible at a time) so the label elides instead of pushing
-                // the layout past the panel cell.
-                Layout.maximumWidth: compactRoot.horizontal
-                    ? Math.max(0, compactRoot.width - 2 * Kirigami.Units.smallSpacing
-                        - (root.compactShowIcon ? compactRoot.iconSize + compactContent.columnSpacing : 0))
-                    : compactRoot.vertical
-                        ? Math.max(0, compactRoot.width - 2 * Kirigami.Units.smallSpacing)
-                        : -1
+
+                TextMetrics {
+                    id: textMetrics
+                    font: compactLabel.font
+                    text: compactLabel.textForState
+                }
             }
         }
     }
