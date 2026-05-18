@@ -20,6 +20,7 @@ package/
       config/
         ConfigGeneral.qml     # General settings page (token management)
         ConfigAppearance.qml  # Appearance settings page (background, etc.)
+        ConfigLinks.qml       # Links settings page (quick link buttons)
     config/
       config.qml            # ConfigModel (declares config categories)
       main.xml              # KConfig schema (appearance prefs)
