@@ -12,4 +12,9 @@ ConfigModel {
         icon: "preferences-desktop-theme"
         source: "config/ConfigAppearance.qml"
     }
+    ConfigCategory {
+        name: i18n("Links")
+        icon: "internet-web-browser"
+        source: "config/ConfigLinks.qml"
+    }
 }

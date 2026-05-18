@@ -589,7 +589,7 @@ PlasmoidItem {
 
     fullRepresentation: PlasmaExtras.Representation {
         implicitWidth: Kirigami.Units.gridUnit * 18
-        implicitHeight: Kirigami.Units.gridUnit * 14
+        implicitHeight: Kirigami.Units.gridUnit * 18
         Layout.minimumWidth: Kirigami.Units.gridUnit * 14
         Layout.minimumHeight: Kirigami.Units.gridUnit * 12
 
@@ -854,6 +854,66 @@ PlasmoidItem {
             }
 
             Item { Layout.fillHeight: true }
+
+            // ---------------- Quick-link buttons ------------------------
+            Column {
+                id: linksGrid
+                Layout.fillWidth: true
+                spacing: Kirigami.Units.smallSpacing
+
+                readonly property int columns: 3
+                readonly property real buttonWidth:
+                    (width - (columns - 1) * spacing) / columns
+
+                readonly property var allLinks: [
+                    { label: "Chat (v1)", url: "https://venice.ai/chat?v=1",          show: Plasmoid.configuration.showLinkChatV1 },
+                    { label: "Chat (v2)", url: "https://venice.ai/chat/v2",           show: Plasmoid.configuration.showLinkChatV2 },
+                    { label: "Studio",    url: "https://venice.ai/studio",            show: Plasmoid.configuration.showLinkStudio },
+                    { label: "Feed",      url: "https://venice.ai/feed",              show: Plasmoid.configuration.showLinkFeed },
+                    { label: "API",       url: "https://venice.ai/settings/api",      show: Plasmoid.configuration.showLinkApi },
+                    { label: "Pricing",   url: "https://docs.venice.ai/overview/pricing", show: Plasmoid.configuration.showLinkPricing },
+                    { label: "Token",     url: "https://venice.ai/token",             show: Plasmoid.configuration.showLinkToken }
+                ]
+
+                readonly property var visibleLinks: {
+                    var result = []
+                    for (var i = 0; i < allLinks.length; ++i) {
+                        if (allLinks[i].show) result.push(allLinks[i])
+                    }
+                    return result
+                }
+
+                readonly property int rowCount:
+                    Math.ceil(visibleLinks.length / columns)
+
+                visible: visibleLinks.length > 0
+
+                Repeater {
+                    model: linksGrid.rowCount
+
+                    Row {
+                        readonly property int rowIndex: index
+                        readonly property int startIdx: rowIndex * linksGrid.columns
+                        readonly property int itemsInRow:
+                            Math.min(linksGrid.columns, linksGrid.visibleLinks.length - startIdx)
+
+                        anchors.horizontalCenter: parent.horizontalCenter
+                        spacing: linksGrid.spacing
+
+                        Repeater {
+                            model: parent.itemsInRow
+
+                            PlasmaComponents.Button {
+                                readonly property var linkData:
+                                    linksGrid.visibleLinks[rowIndex * linksGrid.columns + index]
+                                width: linksGrid.buttonWidth
+                                text: linkData.label
+                                onClicked: Qt.openUrlExternally(linkData.url)
+                            }
+                        }
+                    }
+                }
+            }
         }
     }
 }

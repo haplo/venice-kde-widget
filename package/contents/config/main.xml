@@ -29,4 +29,27 @@
       <default>percentage</default>
     </entry>
   </group>
+  <group name="Links">
+    <entry name="showLinkChatV1" type="Bool">
+      <default>true</default>
+    </entry>
+    <entry name="showLinkChatV2" type="Bool">
+      <default>true</default>
+    </entry>
+    <entry name="showLinkStudio" type="Bool">
+      <default>true</default>
+    </entry>
+    <entry name="showLinkFeed" type="Bool">
+      <default>true</default>
+    </entry>
+    <entry name="showLinkApi" type="Bool">
+      <default>true</default>
+    </entry>
+    <entry name="showLinkPricing" type="Bool">
+      <default>true</default>
+    </entry>
+    <entry name="showLinkToken" type="Bool">
+      <default>true</default>
+    </entry>
+  </group>
 </kcfg>
