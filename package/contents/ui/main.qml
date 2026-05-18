@@ -309,7 +309,7 @@ PlasmoidItem {
 
     Timer {
         id: pollTimer
-        interval: 60000
+        interval: 30000
         repeat: true
         running: root.apiToken !== "" && !root.needsToken
         triggeredOnStart: true
