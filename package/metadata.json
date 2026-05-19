@@ -1,17 +1,17 @@
 {
   "KPackageStructure": "Plasma/Applet",
   "KPlugin": {
-    "Id": "com.venice.widget.credits",
-    "Name": "Venice.ai Credits",
-    "Description": "Displays Venice.ai API credits and usage balances",
-    "Icon": "tools-report-bug",
+    "Id": "net.fidelramos.kde.veniceai",
+    "Name": "Venice.ai Balance",
+    "Description": "Displays Venice.ai API available balances",
+    "Icon": "venice-applet",
     "Authors": [
       {
-        "Name": "Fidel",
-        "Email": ""
+        "Name": "Fidel Ramos",
+        "Email": "contact.gyldd@8shield.net"
       }
     ],
-    "Version": "1.1",
+    "Version": "1.0",
     "License": "MIT",
     "Category": "System Information",
     "Website": "https://venice.ai",
