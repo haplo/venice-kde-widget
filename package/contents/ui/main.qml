@@ -636,7 +636,7 @@ PlasmoidItem {
                     PlasmaExtras.Heading {
                         id: heading
                         level: 2
-                        text: "Venice.ai Credits"
+                        text: "Venice.ai Balance"
                         anchors.fill: parent
                         horizontalAlignment: Text.AlignHCenter
                         color: root.effectiveTextColor

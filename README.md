@@ -1,6 +1,6 @@
-# Venice.ai Credits Widget for KDE Plasma 6
+# Venice.ai Balance Widget for KDE Plasma 6
 
-A KDE Plasma 6 widget (plasmoid) that displays your [Venice.ai](https://venice.ai/) API credits and usage information on the desktop or panel.
+A KDE Plasma 6 widget (plasmoid) that displays your [Venice.ai](https://venice.ai/) API balance information on the desktop or panel.
 
 It stores the API token securely in KWallet via `libsecret`.
 
@@ -31,7 +31,7 @@ Installing the widget:
 make install
 ```
 
-After installing, right-click your desktop or panel, choose **Add Widgets**, and search for "Venice.ai Credits". Open the widget's settings to enter your Venice.ai API token.
+After installing, right-click your desktop or panel, choose **Add Widgets**, and search for "Venice.ai Balance". Open the widget's settings to enter your Venice.ai API token.
 
 Uninstalling the widget:
 

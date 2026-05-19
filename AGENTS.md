@@ -2,7 +2,7 @@
 
 ## Project Overview
 
-A KDE Plasma 6 widget (plasmoid) that displays Venice.ai API credits and usage information on the desktop or panel.
+A KDE Plasma 6 widget (plasmoid) that displays Venice.ai API balance information on the desktop or panel.
 
 ## Tech Stack
 
