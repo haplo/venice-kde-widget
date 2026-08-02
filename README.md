@@ -4,6 +4,16 @@ A KDE Plasma 6 widget (plasmoid) that displays your [Venice.ai](https://venice.a
 
 It stores the API token securely in KWallet via `libsecret`.
 
+## Disclaimer
+
+This package is not related to or developed by Venice. No relationship between the developer of this package and Venice exists.
+
+All trademarks, logos and brand names are the property of their respective owners. All company, product and service names used in this package are for identification purposes only. Use of these names, trademarks and brands does not imply endorsement.
+
+## AI disclaimer
+
+This project was AI-generated. The author uses it daily, but **use at your own risk**.
+
 ## Screenshots
 
 Compact display in panel, color coded, configurable text options:
