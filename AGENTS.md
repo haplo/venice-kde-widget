@@ -41,6 +41,7 @@ package/
 ```bash
 make install    # Install widget locally
 make uninstall  # Remove installed widget
+make package    # Build .plasmoid archive for KDE Store submission
 make dev        # Test in standalone viewer (plasmoidviewer)
 make logs       # View Plasma shell logs (journalctl)
 ```

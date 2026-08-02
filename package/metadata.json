@@ -4,7 +4,7 @@
     "Id": "net.fidelramos.kde.veniceai",
     "Name": "Venice.ai Balance",
     "Description": "Displays Venice.ai API available balances",
-    "Icon": "venice-applet",
+    "Icon": "/images/venice-applet.png",
     "Authors": [
       {
         "Name": "Fidel Ramos",
