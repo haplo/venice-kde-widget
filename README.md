@@ -35,7 +35,7 @@ Requirements:
 - KDE Plasma 6.
 - `secret-tool` (provided by `libsecret-tools` or `libsecret` packages in most distributions).
 
-**From the KDE Store:** right-click your desktop or panel, choose **Add Widgets**, click **Get New Widgets**, search for "Venice.ai Balance" and click **Install**. Store page: <https://store.kde.org/p/PRODUCT_ID> <!-- TODO: update after publishing -->
+**From the KDE Store:** right-click your desktop or panel, choose **Add Widgets**, click **Get New Widgets**, search for "Venice.ai Balance" and click **Install**. Store page: <https://www.opendesktop.org/p/2368690/>
 
 **From source:**
 
