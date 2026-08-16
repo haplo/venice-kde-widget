@@ -35,7 +35,9 @@ Requirements:
 - KDE Plasma 6.
 - `secret-tool` (provided by `libsecret-tools` or `libsecret` packages in most distributions).
 
-Installing the widget:
+**From the KDE Store:** right-click your desktop or panel, choose **Add Widgets**, click **Get New Widgets**, search for "Venice.ai Balance" and click **Install**. Store page: <https://www.opendesktop.org/p/2368690/>
+
+**From source:**
 
 ```bash
 make install
@@ -43,11 +45,13 @@ make install
 
 After installing, right-click your desktop or panel, choose **Add Widgets**, and search for "Venice.ai Balance". Open the widget's settings to enter your Venice.ai API token.
 
-Uninstalling the widget:
+Uninstalling a source install:
 
 ```bash
 make uninstall
 ```
+
+(Store installs are removed from the widget explorer's **Uninstall** button.)
 
 ## Develop
 
@@ -72,6 +76,14 @@ Streams `plasmashell` journal output via `journalctl`.
 ```bash
 make restart
 ```
+
+**Build the store package**
+
+```bash
+make package
+```
+
+Creates `net.fidelramos.kde.veniceai-<version>.plasmoid` (version read from `package/metadata.json`) for KDE Store submission.
 
 **Project structure**
 
